@@ -8,14 +8,18 @@ function initMap(zones,data){
 
 	var imgData = [1];
 
+	var width = 1100;
+
+	var height = 900;
+
 	var svg = d3.select('#map-canvas').append("svg")
-							  .attr({'width': 1100, 'height': 900});
+							  .attr({'width': width, 'height': height});
 
 	var mapImage = svg.selectAll('.mapImage')
 					  .data(imgData);
 
 		mapImage.enter().append('svg:image')
-				.attr({'xlink:href':'1floor.jpg','width':1100, 'height':900,'class': 'mapImage','opacity':0.5});
+				.attr({'xlink:href':'1floor.jpg','width':width, 'height':height,'class': 'mapImage','opacity':0.4});
 
 	var zones = svg.selectAll(".zones")
 						.data(zones, function(d){
@@ -39,7 +43,7 @@ function initMap(zones,data){
 			 			      return str;
 			 			  },
 			 	'fill':'none',
-			 	'stroke':'#666',
+			 	'stroke':'none',
 			 	'class':'zones',
 			 	'stroke-width':3
 			  })
@@ -56,7 +60,7 @@ function initMap(zones,data){
 
 				var marker = gElem.append('svg:image')
 								  .attr({
-								  	'xlink:href': 'locationred.png',
+								  	'xlink:href': 'locationIcon.png',
 								  	'width': 40,
 								  	'height': 40,
 								  	'x': (xyBox[0] - (4 * padding)),
@@ -73,11 +77,13 @@ function initMap(zones,data){
 
 								  	var start = d3.select(this).attr('zoneVal');
 								  	var plotArray = [];
+								  	
 								  	for(var i in data){
 								  		if(data[i]['start'] == start){
 								  			plotArray.push(data[i]);
 								  		}
 								  	}
+
 								  	for(var i in plotArray){
 								  		plotPath(plotArray[i]);
 								  	}
