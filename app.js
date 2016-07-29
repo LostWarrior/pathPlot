@@ -1,4 +1,6 @@
-function initMap(zones,data){
+function initMap(zoneData,data,width,height){
+
+	var colors = ['#b2b2b2','#65ac63','#332e60','#ad4742','#4558A7','#BCA230'];
 
 	var minMax = getMinMax(data);
 
@@ -8,9 +10,7 @@ function initMap(zones,data){
 
 	var imgData = [1];
 
-	var width = 1100;
-
-	var height = 900;
+	var markerWidth = 40;
 
 	var svg = d3.select('#map-canvas').append("svg")
 							  .attr({'width': width, 'height': height});
@@ -21,8 +21,14 @@ function initMap(zones,data){
 		mapImage.enter().append('svg:image')
 				.attr({'xlink:href':'1floor.jpg','width':width, 'height':height,'class': 'mapImage','opacity':0.4});
 
-	var zones = svg.selectAll(".zones")
-						.data(zones, function(d){
+	/* Plot zone names and markers */
+
+	var zoneParent = svg.selectAll('.zoneParent').data([1]);
+
+				zoneParent.enter().append('g').attr('class','zoneParent');
+
+	var zones = zoneParent.selectAll(".zones")
+						.data(zoneData, function(d){
 							return d.name;
 						});
 
@@ -45,128 +51,237 @@ function initMap(zones,data){
 			 	'fill':'none',
 			 	'stroke':'none',
 			 	'class':'zones',
-			 	'stroke-width':3
-			  })
-			 .each(function(d,i){
-
-			 	var bBoxVal = this.getBBox();
-
-			 	var padding = 10;
-
-				var xyBox = [bBoxVal.x + bBoxVal.width/2, bBoxVal.y + bBoxVal.height/2];
-
-				var gElem = svg.append('g')
-							   .attr('class','markerG');
-
-				var marker = gElem.append('svg:image')
-								  .attr({
-								  	'xlink:href': 'locationIcon.png',
-								  	'width': 40,
-								  	'height': 40,
-								  	'x': (xyBox[0] - (4 * padding)),
-								  	'y': (xyBox[1] - (3 * padding)),
-								  	'zoneVal': d.name,
-								  	'dataVal': d.points,
-								  	'cursor': 'pointer',
-								  	'class': 'markers'
-								  })
-								  .on('click', function(){
-
-								  	var existingPaths = svg.selectAll('.plottedPath').remove();
+			 	'stroke-width':3,
+			 	'opacity':0.1
+			  });
 
 
-								  	var start = d3.select(this).attr('zoneVal');
-								  	var plotArray = [];
-								  	
-								  	for(var i in data){
-								  		if(data[i]['start'] == start){
-								  			plotArray.push(data[i]);
-								  		}
-								  	}
+	var centroids = calculateCentroids();
 
-								  	for(var i in plotArray){
-								  		plotPath(plotArray[i]);
-								  	}
+	var markerParent = svg.selectAll('.markerParent')
+						  .data([1]);
 
-								  });
+					markerParent.enter().append('g').attr('class','markerParent');
 
-				var text = gElem.append('text')
-								.attr('x', xyBox[0] + (3 * padding))
-								.attr('y', xyBox[1])
-								.text(function(){
-									return d.name;
-								})
-								.style({
-									'text-anchor': 'middle', 
-									'fill':'#c0392b', 
-									'stroke-width': 0.6, 
-									'stroke': '#c0392b',
-									'font-size': '12px'
-								})
+	var markers = markerParent.selectAll('.markerG')
+						.data(centroids, function(d){
+							return d.name;
+						});
 
-			 })
+		markers.enter().append('g')
+			   .attr('class','markerG')
+			   .append('svg:image')
+			   .attr({
+			  	'xlink:href': 'locationIcon.png',
+			  	'width': markerWidth,
+			  	'height': markerWidth,
+			  	'x': function(d){
+			  		return d['center'][0] - markerWidth/2;
+			  	},
+			  	'y': function(d){
+			  		return d['center'][1] - markerWidth/2;
+			  	},
+			  	'zoneVal': function(d){
+			  		return d.name;
+			  	},
+			  	'cursor': 'pointer',
+			  	'class': 'markers'
+			   })
+			   .on('click', function(d){
 
-			 function plotPath(data){
+			   		var paths = d3.selectAll('path');
 
-			 	var start = [];
-			 	var end = [];
+				 	paths.attr({
+				 	  	'opacity': 0.4,
+				 	  	'stroke-width': function(d){
+				 	  		return getLineWidth(d.value);
+				 	  	}
+				 	});
 
-			 	var imageSize = 40;
+			   		var zoneName = d['name'];
 
-			 	var padding = imageSize/2;
+			   	 	var zoneExists = [];
 
-			 	var nodes = svg.selectAll('.markers');
+			   		for(var i in data){
+			   			for(var j in data[i]['location']){
+			   				if(data[i]['location'][j] == zoneName){
+			   					zoneExists.push(data[i]['path']);
+			   				}
+			   			}
+			   		}
 
-			 	var len = nodes[0].length;
-			 				   
-			 	for(var i = 0; i < len; i++){
+			   		for(var m in zoneExists){
+
+			   			var attrVal = '[pathId="' + zoneExists[m] + '"]';
+
+				   		var len = paths[0].length;
+
+				   		for(var l = 0; l < len; l++){
+
+				   			if($(paths[0][l]).attr('pathId') == zoneExists[m]){
+
+				   				d3.select(paths[0][l]).attr({
+				   					'stroke-width': 4,
+				   					'opacity':1
+				   				});
+
+				   			}
+
+				   		}
+
+			   		}
+
+			   		
+			   });
+
+		markers.append('text')
+			   .attr({
+			   	'x': function(d){
+			   		return d['center'][0];
+			   	},
+			   	'y': function(d){
+			   		return d['center'][1] + markerWidth;
+			   	}
+
+			   })
+			   .text(function(d){
+			   	 return d.name;
+			   })
+			   .style({
+				'text-anchor': 'middle', 
+				'fill':'#c0392b', 
+				'stroke-width': 0.6, 
+				'stroke': '#c0392b',
+				'font-size': '12px'
+			   });
 
 
-			 		var selected = d3.select(nodes[0][i]);
+		var centroidZoneVals = [];
 
-			 		var zoneVal = selected.attr('zoneVal');
+		for(var i in centroids){
 
-			 		if( zoneVal == data['start']){
-			 			var x = parseFloat(selected.attr('x')) + padding;
-			 			var y = parseFloat(selected.attr('y')) + imageSize;
-			 			start = [x,y];
-			 		}
+			centroidZoneVals[centroids[i]['name']] = centroids[i]['center'];
 
-			 		if(zoneVal == data['end']){
-			 			var x = parseFloat(selected.attr('x')) + padding;
-			 			var y = parseFloat(selected.attr('y')) + imageSize;
-			 			end = [x,y];
-			 		}
+		}
 
-			 	}
+	var lineFunction = d3.svg.line()
+                         .x(function(d) { return d.x; })
+                         .y(function(d) { return d.y; })
+                         .interpolate("linear");
 
-			 	var count = data['value'];
 
-			 	lineFunction(start, end, count);
-			 }
+	/* Plot paths */
 
-			 function lineFunction(start,end, count){
+	var pathGroup = svg.selectAll('.pathGroup')
+					   .data([1]);
 
-			 	var width = getLineWidth(count);
+		pathGroup.enter().append('g').attr({'class': 'pathGroup'});
 
-			 	var line = svg.append('line')
-			 				   .attr({'x1': start[0], 'y1': start[1], 'x2': end[0], 'y2': end[1]})
-			 				   .style({'stroke': '#000', 'fill': '#000'})
-			 				   .attr({'stroke-width':width, 'class': 'plottedPath'});
 
-			 }
+	var pathParent = pathGroup.selectAll('.pathParent')
+						 .data(data);
 
-			 function getLineWidth(count){
+		pathParent.enter().append('g')
+			 .attr('class',  'pathParent')
+			 .append('path')
+			 .attr({
+			 	'pathId': function(d){
+			 		return d.path;
+			 	},
+			 	'class': 'path',	
+			 	'dataVal': function(d){
+			 		return d.value;
+			 	},
+			 	'stroke-width': function(d){
+			 		var val = getLineWidth(d.value);
+			 		return val;
+			 	},
+			 	'fill': 'none',
+			 	'stroke': function(d){
+			 		return colors[d.path];
+			 	},
+			 	'opacity': 0.4,
+			 	'cursor':'pointer'
+			 });
 
-			 	var xScale = d3.scale.linear()
-			 					.range([1,6])
-			 					.domain([minCount, maxCount]);
 
-			 	var width = xScale(count);
+	var paths = svg.selectAll('.pathGroup').selectAll('.pathParent').selectAll('path')
+				.data(function(d){
+				 	var points = [];
 
-			 	return width;
+				 	for(var i in d.location){
+				 		var val = {};
+				 		val['x'] = centroidZoneVals[d.location[i]][0];
+				 		val['y'] = centroidZoneVals[d.location[i]][1];
+				 		points.push(val);
+				 	}
 
-			 }
+				 	return [points];
+
+				 })
+				 .attr('d', function(d){
+
+				 	return lineFunction(d);
+				 })
+				 .on('click', function(){
+
+				 	d3.selectAll('path')
+				 	  .attr({
+				 	  	'opacity': 0.4,
+				 	  	'stroke-width': function(d){
+				 	  		return getLineWidth(d.value);
+				 	  	}
+				 	  })
+
+				 	d3.select(this).attr({
+				 		'opacity': 1,
+				 		'stroke-width': 4
+				 	})
+
+				 });
+
+
+
+
+
+	function getLineWidth(count){
+
+	 	var xScale = d3.scale.linear()
+	 					.range([1,6])
+	 					.domain([0, maxCount]);
+
+	 	var width = xScale(count);
+
+	 	return width;
+
+	}
+
+	/* Calculate center points of polygon */
+
+	function calculateCentroids(){
+
+		var centroids = [];
+
+		var sel = svg.selectAll('.zones')
+					 .each(function(d,i){
+
+					 	var obj = {};
+
+					 	var bBoxVal = this.getBBox();
+
+					 	var xyBox = [bBoxVal.x + bBoxVal.width/2, bBoxVal.y + bBoxVal.height/2];
+
+					 	obj.center = xyBox;
+
+					 	obj.name = d['name'];
+
+					 	centroids.push(obj);
+
+					 });
+
+		return centroids;
+	}
+
 }
 
 
