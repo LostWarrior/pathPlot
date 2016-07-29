@@ -92,7 +92,7 @@ function initMap(zoneData,data,width,height){
 			   		var paths = d3.selectAll('path');
 
 				 	paths.attr({
-				 	  	'opacity': 0.4,
+				 	  	'opacity': 0.5,
 				 	  	'stroke-width': function(d){
 				 	  		return getLineWidth(d.value);
 				 	  	}
@@ -120,8 +120,13 @@ function initMap(zoneData,data,width,height){
 
 				   			if($(paths[0][l]).attr('pathId') == zoneExists[m]){
 
+				   				var sel = $(paths[0][l]).attr('dataVal');
+
 				   				d3.select(paths[0][l]).attr({
-				   					'stroke-width': 4,
+				   					'stroke-width': function(){
+
+				   						return getLineWidthHighlighted(sel);
+				   					},
 				   					'opacity':1
 				   				});
 
@@ -167,7 +172,7 @@ function initMap(zoneData,data,width,height){
 	var lineFunction = d3.svg.line()
                          .x(function(d) { return d.x; })
                          .y(function(d) { return d.y; })
-                         .interpolate("linear");
+                         .interpolate("step-before");
 
 
 	/* Plot paths */
@@ -200,7 +205,7 @@ function initMap(zoneData,data,width,height){
 			 	'stroke': function(d){
 			 		return colors[d.path];
 			 	},
-			 	'opacity': 0.4,
+			 	'opacity': 0.5,
 			 	'cursor':'pointer'
 			 });
 
@@ -227,7 +232,7 @@ function initMap(zoneData,data,width,height){
 
 				 	d3.selectAll('path')
 				 	  .attr({
-				 	  	'opacity': 0.4,
+				 	  	'opacity': 0.5,
 				 	  	'stroke-width': function(d){
 				 	  		return getLineWidth(d.value);
 				 	  	}
@@ -235,7 +240,13 @@ function initMap(zoneData,data,width,height){
 
 				 	d3.select(this).attr({
 				 		'opacity': 1,
-				 		'stroke-width': 4
+
+				 		'stroke-width': function(d){
+
+				 			var sel = d3.select(this).attr('dataVal');
+
+				 			return getLineWidthHighlighted(sel);
+				 		}
 				 	})
 
 				 });
@@ -254,6 +265,17 @@ function initMap(zoneData,data,width,height){
 
 	 	return width;
 
+	}
+
+	function getLineWidthHighlighted(count){
+
+		var xScaleHighlighted = d3.scale.linear()
+								  .range([5,8])
+								  .domain([0, maxCount]);
+
+		var widthHighlighted = xScaleHighlighted(count);
+
+		return widthHighlighted;
 	}
 
 	/* Calculate center points of polygon */

@@ -1,4 +1,5 @@
 location_combination,count,path_id
-Zone2:Zone1:Zone3,4453,1
-Zone3:Zone1:Zone2,1999,2
-Zone1:Zone4,1832,3
+Zone2:Zone4:Zone1,4453,1
+Zone5:Zone1:Zone2,1999,2
+Zone3:Zone2:Zone4,1832,3
+Zone1:Zone5:Zone3,5000,4
